@@ -1,6 +1,6 @@
 using backend.Models;
 
-namespace backend.Services;
+namespace backend.Services.CityProvider;
 
 public interface ICityProvider
 {

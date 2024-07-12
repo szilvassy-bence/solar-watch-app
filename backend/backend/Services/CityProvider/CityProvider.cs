@@ -1,18 +1,17 @@
 using System.Text.Json;
 using backend.Models;
 
-namespace backend.Services;
+namespace backend.Services.CityProvider;
 
 public class CityProvider : ICityProvider
 {
-
     private readonly ILogger<CityProvider> _logger;
     private readonly string _openWeatherApiKey;
 
-    public CityProvider(ILogger<CityProvider> logger, string openWeatherApiKey)
+    public CityProvider(ILogger<CityProvider> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _openWeatherApiKey = openWeatherApiKey;
+        _openWeatherApiKey = configuration["Solar:OpenWeatherMapKey"] ?? throw new InvalidOperationException();
     }
 
     public async Task<string> GetCity(string city)
