@@ -15,7 +15,7 @@ public class CityProvider : ICityProvider
         _openWeatherApiKey = openWeatherApiKey;
     }
 
-    public async Task<City> GetCity(string city)
+    public async Task<string> GetCity(string city)
     {
         var url = $"http://api.openweathermap.org/geo/1.0/direct?q={city}&appid={_openWeatherApiKey}";
 
@@ -43,40 +43,4 @@ public class CityProvider : ICityProvider
         }
     }
     
-    private City Process(string json)
-    {
-        if (string.IsNullOrEmpty(json))
-        {
-            throw new ArgumentException("Input json data cannot be empty.");
-        }
- 
-        JsonDocument jd = JsonDocument.Parse(json);
-        JsonElement root = jd.RootElement[0];
-        var lat = GetDoubleProperty(root, "lat");
-        var lon = root.GetProperty("lon");
-        var name = root.GetProperty("name");
-        var country = root.GetProperty("country");
-        
-        City city;
-        JsonElement state;
-        if (root.TryGetProperty("state", out state))
-            city = new City
-            {
-                Latitude = lat.GetDouble(), 
-                Longitude = lon.GetDouble(), 
-                Name = name.GetString(),
-                Country = country.GetString(), 
-                State = state.GetString()
-            };
-        else
-            city = new City
-            {
-                Latitude = lat.GetDouble(), 
-                Longitude = lon.GetDouble(), 
-                Name = name.GetString(),
-                Country = country.GetString()
-            };
-
-        return city;
-    }
 }

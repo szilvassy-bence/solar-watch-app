@@ -4,5 +4,5 @@ namespace backend.Services;
 
 public interface ICityProvider
 {
-    Task<City> GetCity(string city);
+    Task<string> GetCity(string city);
 }
