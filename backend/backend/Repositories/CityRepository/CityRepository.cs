@@ -1,5 +1,6 @@
 using backend.Models;
 using backend.Services;
+using backend.Services.CityProvider;
 using backend.Services.JsonProcessor;
 
 namespace backend.Repositories.CityRepository;
