@@ -1,0 +1,17 @@
+services:
+  
+  backend:
+    image: solar-watch-app-backend
+    build:
+      context: ./backend/backend
+      dockerfile: Dockerfile
+
+  frontend:
+    image: solar-watch-app-frontend:v1.0
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - 8082:5173
+    environment:
+      - VITE_BACKEND_URL=http://backend:80/
