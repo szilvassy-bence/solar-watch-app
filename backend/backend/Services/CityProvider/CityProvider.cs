@@ -29,15 +29,13 @@ public class CityProvider : ICityProvider
 
             if (cityJson.Trim() == "[]")
             {
-                _logger.LogInformation("Calling OpenWeather API for Coordinates with url: {url}", url);
-                throw new Exception("No city found for the given query.");
+                throw new ArgumentException("No city found for the given query.");
             }
 
             return cityJson;
         }
         else
         {
-            _logger.LogInformation("Problem calling OpenWeather Api, status code: {statuscode}", response.StatusCode);
             throw new Exception($"Failed to retrieve data. Status code: {response.StatusCode}");
         }
     }
