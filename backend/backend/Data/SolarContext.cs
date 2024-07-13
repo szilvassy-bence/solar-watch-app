@@ -1,9 +1,11 @@
 using backend.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data;
 
-public class SolarContext : DbContext
+public class SolarContext : IdentityDbContext<AppUser, IdentityRole, string>
 {
     public SolarContext(DbContextOptions<SolarContext> options) : base(options)
     {}
@@ -23,6 +25,10 @@ public class SolarContext : DbContext
             .HasMany(c => c.SunriseSunsets)
             .WithOne(ss => ss.City)
             .HasForeignKey(ss => ss.CityId);
+
+        modelBuilder.Entity<City>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.Favorites);
         
         modelBuilder.Entity<City>()
             .HasData(
