@@ -1,8 +1,11 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using backend.Data;
 using backend.Repositories.CityRepository;
+using backend.Repositories.SunriseSunsetRepository;
 using backend.Services.CityProvider;
 using backend.Services.JsonProcessor;
+using backend.Services.SunriseSunsetProvider;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,12 +14,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IJsonProcessor, JsonProcessor>();
 builder.Services.AddSingleton<ICityProvider, CityProvider>();
+builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>();
 builder.Services.AddScoped<ICityRepository, CityRepository>();
+builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>();
 
 var dbHost = System.Environment.GetEnvironmentVariable("DATABASE_HOST");
 // in docker we set this, otherwise default to localhost
