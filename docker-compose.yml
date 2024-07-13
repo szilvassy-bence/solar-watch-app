@@ -5,6 +5,10 @@ services:
     build:
       context: ./backend/backend
       dockerfile: Dockerfile
+    environment:
+      - DATABASE_HOST=database
+    depends_on:
+      - database
 
   frontend:
     image: solar-watch-app-frontend:v1.0
@@ -15,3 +19,12 @@ services:
       - 8082:5173
     environment:
       - VITE_BACKEND_URL=http://backend:80/
+
+  database:
+    image: mcr.microsoft.com/mssql/server
+    container_name: solar-watch-app-database
+    environment:
+      - ACCEPT_EULA=y
+      - SA_PASSWORD=Solar-Watch-2024
+    ports:
+      - "1433:1433"
