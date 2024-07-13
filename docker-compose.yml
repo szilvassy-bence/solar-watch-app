@@ -25,6 +25,6 @@ services:
     container_name: solar-watch-app-database
     environment:
       - ACCEPT_EULA=y
-      - SA_PASSWORD=Solar-Watch-2024
+      - SA_PASSWORD=${SQLSERVER_PASSWORD}
     ports:
       - "1433:1433"
