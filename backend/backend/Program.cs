@@ -1,13 +1,20 @@
+using System.Text;
 using System.Text.Json.Serialization;
 using backend.Data;
+using backend.Models;
 using backend.Repositories.CityRepository;
 using backend.Repositories.SunriseSunsetRepository;
 using backend.Services;
 using backend.Services.CityProvider;
+using backend.Services.GlobalExceptionHandler;
 using backend.Services.JsonProcessor;
 using backend.Services.SunriseSunsetProvider;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,13 +23,27 @@ var builder = WebApplication.CreateBuilder(args);
 
 AddEnvironmentVariables(builder.Configuration);
 AddServices();
+ConfigureSwagger();
 
 var connectionString = BuildConnectionString();
 AddDbContext();
 
+AddAuthentication();
+AddIdentity();
+
 var app = builder.Build();
 
+app.UseStatusCodePages();
+app.UseExceptionHandler();
+
 ApplyMigrations();
+
+using (var authSeederScope = app.Services.CreateScope())
+{
+    var authenticationSeeder = authSeederScope.ServiceProvider.GetRequiredService<AuthenticationSeeder>();
+    authenticationSeeder.AddRoles();
+    authenticationSeeder.AddAdmin();
+}
 
 app.Logger.LogInformation("The application is started.");
 
@@ -36,6 +57,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
@@ -56,7 +80,6 @@ void AddEnvironmentVariables(IConfigurationBuilder configBuilder)
     }
 }
 
-
 void AddServices()
 {
     builder.Services.AddControllers()
@@ -64,22 +87,82 @@ void AddServices()
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddSingleton<IJsonProcessor, JsonProcessor>();
-    builder.Services.AddSingleton<ICityProvider, CityProvider>();
-    builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>();
-    builder.Services.AddScoped<ICityRepository, CityRepository>();
-    builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>();
-}
-
-bool IsRunningInDocker()
-{
-    var dockerEnv = Environment.GetEnvironmentVariable("DOCKER");
-    return dockerEnv?.ToLower() == "true";
+    builder.Services.AddSingleton<ICityProvider, CityProvider>()
+        .AddProblemDetails()
+        .AddExceptionHandler<GlobalExceptionHandler>();;
+    builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>()
+        .AddProblemDetails()
+        .AddExceptionHandler<GlobalExceptionHandler>();;
+    builder.Services.AddScoped<ICityRepository, CityRepository>()
+        .AddProblemDetails()
+        .AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>()
+        .AddProblemDetails()
+        .AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddScoped<AuthenticationSeeder>();
 }
 
 void AddDbContext()
 {
     builder.Services.AddDbContext<SolarContext>(options =>
         options.UseSqlServer(connectionString));
+}
+
+void ConfigureSwagger()
+{
+    builder.Services.AddSwaggerGen(option =>
+    {
+        option.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
+        option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Description = "Please enter a valid token",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
+        option.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type=ReferenceType.SecurityScheme,
+                        Id="Bearer"
+                    }
+                },
+                new string[]{}
+            }
+        });
+    });
+}
+
+void AddAuthentication()
+{
+    var validIssuer = Environment.GetEnvironmentVariable("VALIDISSUER");
+    var validAudience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
+    var issuerSigningKey = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
+    
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters()
+            {
+                ClockSkew = TimeSpan.Zero,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = validIssuer,
+                ValidAudience = validAudience,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(issuerSigningKey)
+                ),
+            };
+        });
 }
 
 string BuildConnectionString()
@@ -123,6 +206,23 @@ string BuildConnectionString()
     return connectionString;
 }
 
+void AddIdentity()
+{
+    builder.Services
+        .AddIdentityCore<AppUser>(options =>
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+            options.User.RequireUniqueEmail = true;
+            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 6;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
+        })
+        .AddRoles<IdentityRole>()
+        .AddEntityFrameworkStores<SolarContext>();
+}
+
 async void ApplyMigrations()
 {
     using var scope = app.Services.CreateScope();
@@ -131,7 +231,7 @@ async void ApplyMigrations()
     const int maxRetries = 6;
     int retries = 0;
     bool dbReady = false;
-
+    
     while (!dbReady && retries < maxRetries)
     {
         try
@@ -169,4 +269,10 @@ async void ApplyMigrations()
     {
         logger.LogError("Failed to apply migrations after {MaxRetries} attempts.", maxRetries);
     }
+}
+
+bool IsRunningInDocker()
+{
+    var dockerEnv = Environment.GetEnvironmentVariable("DOCKER");
+    return dockerEnv?.ToLower() == "true";
 }
