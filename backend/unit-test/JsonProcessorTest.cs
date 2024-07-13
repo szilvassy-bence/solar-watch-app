@@ -54,4 +54,40 @@ public class JsonProcessorTest
         // Assert
         Assert.Throws<JsonException>(() => _jsonProcessor.ProcessCity(data));
     }
+    
+    [Test]
+    public void ProcessSunriseSunsetJsonReturnsCorrectCity()
+    {
+        // Arrange
+        string sunriseSunsetString = "{\"results\":{\"sunrise\":\"7:27:02 AM\",\"sunset\":\"5:05:55 PM\"}}";
+        
+        // Act
+        SunriseSunset sunriseSunset = _jsonProcessor.ProcessSunriseSunset(sunriseSunsetString, new DateTime());
+        
+        // Assert
+        Assert.IsNotNull(sunriseSunset);
+        Assert.IsInstanceOf<DateTime>(sunriseSunset.Sunrise);
+    }
+    
+    [Test]
+    public void EmptySunriseSunsetStringThrowsException()
+    {
+        // Arrange
+        string data = "";
+        
+        // Act
+        // Assert
+        Assert.Throws<JsonException>(() => _jsonProcessor.ProcessSunriseSunset(data, new DateTime()));
+    }
+    
+    [Test]
+    public void IncompleteSunriseSunsetStringThrowsException()
+    {
+        // Arrange
+        string data = "{\"results\":{\"sunrise\":\"7:27:02 AM\"}}";
+        
+        // Act
+        // Assert
+        Assert.Throws<JsonException>(() => _jsonProcessor.ProcessSunriseSunset(data, new DateTime()));
+    }
 }
