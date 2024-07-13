@@ -38,8 +38,26 @@ public class CityRepository : ICityRepository
 
     public async Task<City> GetCity(string city)
     {
-        
-        string cityJson = await _cityProvider.GetCity(city);
-        return _jsonProcessor.ProcessCity(cityJson);
+        var dbCity = await _context.Cities
+            .Include(c => c.SunriseSunsets)
+            .FirstOrDefaultAsync(c => c.Name == city);
+        if (dbCity is null)
+        {
+            try
+            {
+                string cityJson = await _cityProvider.GetCity(city);
+                var c = _jsonProcessor.ProcessCity(cityJson);
+                var cityEntry = _context.Cities.Add(c);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("New city entry is created.");
+                return cityEntry.Entity;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Error retrieving city information from {city}.", city);
+            }
+        }
+        _logger.LogInformation("City was found in database.");
+        return dbCity;
     }
 }
