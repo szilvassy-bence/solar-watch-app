@@ -22,30 +22,15 @@ namespace backend.Controllers
         [HttpGet("cities")]
         public async Task<ActionResult<IEnumerable<City>>> GetCities()
         {
-            try
-            {
-                IEnumerable<City> cities = await _cityRepository.GetCities();
-                return Ok(cities);
-            }
-            catch (Exception e)
-            {
-                return NotFound();
-            }
+            IEnumerable<City> cities = await _cityRepository.GetCities();
+            return Ok(cities);
         }
 
         [HttpGet("{city}")]
         public async Task<ActionResult<City>> GetCity(string city)
         {
-            try
-            {
-                City c = await _cityRepository.GetCity(city);
-                return Ok(c);
-            }
-            catch (Exception e)
-            {
-                return NotFound(e.Message);
-            }
+            City c = await _cityRepository.GetCity(city);
+            return Ok(c);
         } 
-
     }
 }

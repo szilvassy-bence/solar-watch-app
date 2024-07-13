@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
+[Route("api/[controller]")]
+[ApiController]
 public class SunriseSunsetController : ControllerBase
 {
     private readonly ILogger<SunriseSunsetController> _logger;
@@ -18,13 +20,6 @@ public class SunriseSunsetController : ControllerBase
     [HttpGet("{city}/solar/{date}")]
     public async Task<ActionResult<SunriseSunset>> GetSunInfoByCityByDate(string city, DateTime date)
     {
-        try
-        {
-            return Ok(await _sunsetRepository.GetSunriseSunset(city, date));
-        }
-        catch (Exception e)
-        {
-            return NotFound(e.Message);
-        }
+        return Ok(await _sunsetRepository.GetSunriseSunset(city, date));
     }
 }
