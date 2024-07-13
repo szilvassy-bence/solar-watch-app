@@ -32,7 +32,6 @@ public class CityRepository : ICityRepository
     {
         var cities = await _context.Cities
             .ToListAsync();
-        _logger.LogInformation("Cities asked from the database.");
         return cities;
     }
 
@@ -43,19 +42,12 @@ public class CityRepository : ICityRepository
             .FirstOrDefaultAsync(c => c.Name == city);
         if (dbCity is null)
         {
-            try
-            {
-                string cityJson = await _cityProvider.GetCity(city);
-                var c = _jsonProcessor.ProcessCity(cityJson);
-                var cityEntry = _context.Cities.Add(c);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("New city entry is created.");
-                return cityEntry.Entity;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error retrieving city information from {city}.", city);
-            }
+            string cityJson = await _cityProvider.GetCity(city);
+            var c = _jsonProcessor.ProcessCity(cityJson);
+            var cityEntry = _context.Cities.Add(c);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("New city entry is created.");
+            return cityEntry.Entity;
         }
         _logger.LogInformation("City was found in database.");
         return dbCity;
