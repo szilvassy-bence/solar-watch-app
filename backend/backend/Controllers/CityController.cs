@@ -19,6 +19,20 @@ namespace backend.Controllers
             _cityRepository = cityRepository;
         }
 
+        [HttpGet("cities")]
+        public async Task<ActionResult<IEnumerable<City>>> GetCities()
+        {
+            try
+            {
+                IEnumerable<City> cities = await _cityRepository.GetCities();
+                return Ok(cities);
+            }
+            catch (Exception e)
+            {
+                return NotFound();
+            }
+        }
+
         [HttpGet("{city}")]
         public async Task<ActionResult<City>> GetCity(string city)
         {
