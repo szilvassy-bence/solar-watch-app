@@ -1,7 +1,9 @@
 using System.Text.Json;
+using backend.Data;
 using backend.Repositories.CityRepository;
 using backend.Services.CityProvider;
 using backend.Services.JsonProcessor;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IJsonProcessor, JsonProcessor>();
 builder.Services.AddSingleton<ICityProvider, CityProvider>();
 builder.Services.AddScoped<ICityRepository, CityRepository>();
+
+var sqlServerConnectionString = builder.Configuration.GetConnectionString("SqlServerDefault");
+AddDbContext();
+
+void AddDbContext()
+{
+    builder.Services.AddDbContext<SolarContext>(options =>
+        options.UseSqlServer(sqlServerConnectionString));
+}
 
 var isTestEnvironment = Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT");
 
