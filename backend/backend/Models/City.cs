@@ -22,6 +22,7 @@ public class City
     public string? State { get; set; }
     
     public ICollection<SunriseSunset> SunriseSunsets { get; set; } = new List<SunriseSunset>();
+    public AppUser? User { get; set; }
 
     public override string ToString()
     {
