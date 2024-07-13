@@ -1,0 +1,9 @@
+GET http://127.0.0.1:5120/api/city/yxcvsdf
+
+###
+
+GET http://127.0.0.1:5120/api/SunriseSunset/Miskolc/solar/20240505
+
+###
+
+GET http://127.0.0.1:5120/api/SunriseSunset/sffvxcvcv/solar/2024-05-05
