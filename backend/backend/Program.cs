@@ -104,8 +104,12 @@ void AddServices()
 
 void AddDbContext()
 {
+    //string c = "Server=database,1433;Database=Solar;User Id=sa;TrustServerCertificate=true;Solar-Watch-2024;Encrypt=false;";
     builder.Services.AddDbContext<SolarContext>(options =>
-        options.UseSqlServer(connectionString));
+        options.UseSqlServer(connectionString, sqlOption =>
+        {
+            sqlOption.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        }));
 }
 
 void ConfigureSwagger()
