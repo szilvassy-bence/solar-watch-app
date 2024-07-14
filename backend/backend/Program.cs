@@ -15,18 +15,22 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using HostingEnvironmentExtensions = Microsoft.AspNetCore.Hosting.HostingEnvironmentExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+using var loggerFactory = LoggerFactory.Create(logging =>
+{
+    logging.AddConsole();
+});
+var logger = loggerFactory.CreateLogger<Program>();
 
-AddEnvironmentVariables(builder.Configuration);
+AddEnvironmentVariables(builder.Configuration, logger);
 AddServices();
 ConfigureSwagger();
 
-var connectionString = BuildConnectionString();
-AddDbContext();
+var connectionString = BuildConnectionString(logger);
+AddDbContext(logger);
 
 AddAuthentication();
 AddIdentity();
@@ -36,7 +40,7 @@ var app = builder.Build();
 app.UseStatusCodePages();
 app.UseExceptionHandler();
 
-ApplyMigrations();
+ApplyMigrations(logger);
 
 using (var authSeederScope = app.Services.CreateScope())
 {
@@ -67,8 +71,18 @@ app.Run();
 
 // *********** CONFIGURATION PART *********** // 
 
-void AddEnvironmentVariables(IConfigurationBuilder configBuilder)
+void AddEnvironmentVariables(IConfigurationBuilder configBuilder, ILogger<Program> logger)
 {
+    var docker = Environment.GetEnvironmentVariable("DOCKER");
+
+    if (!string.IsNullOrEmpty(docker))
+    {
+        logger.LogInformation("Environment loads from docker.");
+    }
+    else
+    {
+        logger.LogInformation("Environment loads with add environment variables method.");
+    }
     if (!IsRunningInDocker())
     {
         var parent = Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName;
@@ -89,10 +103,10 @@ void AddServices()
     builder.Services.AddSingleton<IJsonProcessor, JsonProcessor>();
     builder.Services.AddSingleton<ICityProvider, CityProvider>()
         .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();;
+        .AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>()
         .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();;
+        .AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddScoped<ICityRepository, CityRepository>()
         .AddProblemDetails()
         .AddExceptionHandler<GlobalExceptionHandler>();
@@ -102,8 +116,17 @@ void AddServices()
     builder.Services.AddScoped<AuthenticationSeeder>();
 }
 
-void AddDbContext()
+void AddDbContext(ILogger<Program> logger)
 {
+    
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        logger.LogInformation("Connection string is: {connectionString}", connectionString);
+    }
+    else
+    {
+        logger.LogInformation("Connection string cannot be found.");
+    }
     //string c = "Server=database,1433;Database=Solar;User Id=sa;TrustServerCertificate=true;Solar-Watch-2024;Encrypt=false;";
     builder.Services.AddDbContext<SolarContext>(options =>
         options.UseSqlServer(connectionString, sqlOption =>
@@ -169,21 +192,15 @@ void AddAuthentication()
         });
 }
 
-string BuildConnectionString()
+string BuildConnectionString(ILogger<Program> logger)
 {
-    using var loggerFactory = LoggerFactory.Create(logging =>
-    {
-        logging.AddConsole();
-    });
-    var logger = loggerFactory.CreateLogger<Program>();
-    
     var baseConnectionString = builder.Configuration.GetConnectionString("Solar");
     var sqlPassword = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
     var sqlServerHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost,1433";
     
     if (string.IsNullOrEmpty(baseConnectionString))
     {
-        logger.LogInformation("Connection string 'Solar' not found in configuration.");
+        logger.LogInformation("Base connection string 'Solar' not found in configuration.");
         throw new InvalidOperationException("Connection string 'Solar' not found in configuration.");
     }
 
@@ -198,7 +215,7 @@ string BuildConnectionString()
         logger.LogInformation("Connection string 'SW_DB_HOST' not found in configuration.");
         throw new InvalidOperationException("Environment variable 'DB_HOST' not set.");
     }
-    logger.LogInformation("Connection string 'Solar' is: {baseConnectionString}", baseConnectionString);
+    logger.LogInformation("Base connection string 'Solar' is: {baseConnectionString}", baseConnectionString);
     logger.LogInformation("Environment variable 'SQLSERVER_PASSWORD' is: {sqlPassword}", sqlPassword);
     logger.LogInformation("Environment variable 'DB_HOST' is: {sqlServerHost}", sqlServerHost);
     
@@ -227,10 +244,9 @@ void AddIdentity()
         .AddEntityFrameworkStores<SolarContext>();
 }
 
-async void ApplyMigrations()
+async void ApplyMigrations(ILogger<Program> logger)
 {
     using var scope = app.Services.CreateScope();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
     const int maxRetries = 6;
     int retries = 0;
@@ -252,6 +268,67 @@ async void ApplyMigrations()
             else
             {
                 logger.LogInformation("Could not connect to database.");
+            }
+
+            var api = Environment.GetEnvironmentVariable("OPENWEATHERAPIKEY");
+            if (!string.IsNullOrEmpty(api))
+            {
+                logger.LogInformation("Api: {api}", api);
+            }
+            else
+            {
+                logger.LogInformation("Api not found.");
+            }
+            
+            var sign = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
+            if (!string.IsNullOrEmpty(sign))
+            {
+                logger.LogInformation("sign: {sign}", sign);
+            }
+            else
+            {
+                logger.LogInformation("sign not found.");
+            }
+            
+                        
+            var docker = Environment.GetEnvironmentVariable("DOCKER");
+            if (!string.IsNullOrEmpty(docker))
+            {
+                logger.LogInformation("docker: {docker}", docker);
+            }
+            else
+            {
+                logger.LogInformation("docker not found.");
+            }
+            
+            var audience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
+            if (!string.IsNullOrEmpty(audience))
+            {
+                logger.LogInformation("audience: {audience}", audience);
+            }
+            else
+            {
+                logger.LogInformation("audience not found.");
+            }
+            
+            var issuer = Environment.GetEnvironmentVariable("VALIDISSUER");
+            if (!string.IsNullOrEmpty(issuer))
+            {
+                logger.LogInformation("issuer: {issuer}", issuer);
+            }
+            else
+            {
+                logger.LogInformation("issuer not found.");
+            }
+            
+            var sqlPass = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
+            if (!string.IsNullOrEmpty(sqlPass))
+            {
+                logger.LogInformation("sqlPass: {sqlPass}", sqlPass);
+            }
+            else
+            {
+                logger.LogInformation("sqlPass not found.");
             }
 
             solarContext.Database.Migrate();
