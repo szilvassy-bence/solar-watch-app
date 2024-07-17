@@ -4,5 +4,8 @@ namespace backend.Repositories.SunriseSunsetRepository;
 
 public interface ISunriseSunsetRepository
 {
-    public Task<SunriseSunset> GetSunriseSunset(string cityName, DateTime date);
+    Task<IEnumerable<SunriseSunset>> GetAllSunriseSunsets();
+    Task<SunriseSunset> GetSunriseSunset(string cityName, DateTime date);
+    Task<SunriseSunset> GetSunriseSunsetById(int id);
+    Task DeleteSunriseSunset(SunriseSunset sunriseSunset);
 }
