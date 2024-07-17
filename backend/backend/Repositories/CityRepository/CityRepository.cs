@@ -35,7 +35,7 @@ public class CityRepository : ICityRepository
         return cities;
     }
 
-    public async Task<City> GetCity(string city)
+    public async Task<City> GetCityByName(string city)
     {
         var dbCity = await _context.Cities
             .Include(c => c.SunriseSunsets)
@@ -51,5 +51,25 @@ public class CityRepository : ICityRepository
         }
         _logger.LogInformation("City was found in database.");
         return dbCity;
+    }
+
+    public async Task<City> GetCityById(int id)
+    {
+        City? city = await _context.Cities
+            .Include(x => x.SunriseSunsets)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (city is null)
+        {
+            throw new ArgumentException("No city found for the given id.");
+        }
+
+        return city;
+    }
+    
+    public async Task DeleteCity(City city)
+    {
+        _context.Cities.Remove(city);
+        await _context.SaveChangesAsync();
     }
 }
