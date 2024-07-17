@@ -5,6 +5,7 @@ using backend.Models;
 using backend.Repositories.CityRepository;
 using backend.Repositories.SunriseSunsetRepository;
 using backend.Services;
+using backend.Services.Authentication;
 using backend.Services.CityProvider;
 using backend.Services.GlobalExceptionHandler;
 using backend.Services.JsonProcessor;
@@ -113,6 +114,8 @@ void AddServices()
     builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>()
         .AddProblemDetails()
         .AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<AuthenticationSeeder>();
 }
 
