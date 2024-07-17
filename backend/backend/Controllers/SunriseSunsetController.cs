@@ -1,3 +1,4 @@
+using backend.Contracts;
 using backend.Models;
 using backend.Repositories.SunriseSunsetRepository;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,28 @@ public class SunriseSunsetController : ControllerBase
         _sunsetRepository = sunsetRepository;
     }
     
-    [HttpGet("{city}/solar/{date}")]
-    public async Task<ActionResult<SunriseSunset>> GetSunInfoByCityByDate(string city, DateTime date)
+    [HttpGet("sunrisesunsets")]
+    public async Task<ActionResult<IEnumerable<SunriseSunsetDto>>> GetAllSunInfos()
     {
-        return Ok(await _sunsetRepository.GetSunriseSunset(city, date));
+        IEnumerable<SunriseSunset> sunriseSunsets = await _sunsetRepository.GetAllSunriseSunsets();
+        IEnumerable<SunriseSunsetDto> sunriseSunsetDtos = sunriseSunsets.Select(ss => ss.AsDto());
+        return Ok(sunriseSunsetDtos);
+    }
+    
+    [HttpGet("{city}/{date}")]
+    public async Task<ActionResult<SunriseSunsetDto>> GetSunInfoByCityByDate(string city, DateTime date)
+    {
+        SunriseSunset sunriseSunset = await _sunsetRepository.GetSunriseSunset(city, date);
+        SunriseSunsetDto sunriseSunsetDto = sunriseSunset.AsDto();
+        return Ok(sunriseSunsetDto);
+    }
+    
+    [HttpDelete("{id}/delete")]
+    public async Task<IActionResult> DeleteSunInfoById(int id)
+    {
+        var sunInfo = await _sunsetRepository.GetSunriseSunsetById(id);
+        
+        await _sunsetRepository.DeleteSunriseSunset(sunInfo);
+        return NoContent();
     }
 }
