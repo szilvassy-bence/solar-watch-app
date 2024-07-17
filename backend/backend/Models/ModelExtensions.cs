@@ -18,6 +18,16 @@ public static class ModelExtensions
         return new UserDto(
             user.Id,
             user.UserName,
-            user.Email);
+            user.Email,
+            user.Favorites);
+    }
+    
+    public static CityDto AsDto(this City city)
+    {
+        return new CityDto(
+            city.Id,
+            city.Name,
+            city.Country
+            );
     }
 }
