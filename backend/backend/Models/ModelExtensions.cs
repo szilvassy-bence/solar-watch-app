@@ -12,4 +12,12 @@ public static class ModelExtensions
             sunriseSunset.Sunrise.ToString("HH:mm:ss"),
             sunriseSunset.Sunset.ToString("HH:mm:ss"));
     }
+
+    public static UserDto AsDto(this AppUser user)
+    {
+        return new UserDto(
+            user.Id,
+            user.UserName,
+            user.Email);
+    }
 }

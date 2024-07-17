@@ -4,6 +4,7 @@ using backend.Data;
 using backend.Models;
 using backend.Repositories.CityRepository;
 using backend.Repositories.SunriseSunsetRepository;
+using backend.Repositories.UserRepository;
 using backend.Services;
 using backend.Services.Authentication;
 using backend.Services.CityProvider;
@@ -88,7 +89,7 @@ void AddEnvironmentVariables(IConfigurationBuilder configBuilder, ILogger<Progra
     {
         var parent = Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName;
         var dotenv = Path.Combine(parent, ".env");
-        Console.WriteLine(dotenv);
+        logger.LogInformation("The path to .env file is: {path}", dotenv);
         DotEnv.Load(dotenv);
 
         configBuilder.AddEnvironmentVariables().Build();
@@ -112,6 +113,9 @@ void AddServices()
         .AddProblemDetails()
         .AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>()
+        .AddProblemDetails()
+        .AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>()
         .AddProblemDetails()
         .AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -201,23 +205,30 @@ string BuildConnectionString(ILogger<Program> logger)
     var sqlPassword = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
     var sqlServerHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost,1433";
     
-    if (string.IsNullOrEmpty(baseConnectionString))
+    var isTestEnvironment = Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT");
+
+    if (string.IsNullOrEmpty(isTestEnvironment) || !bool.TryParse(isTestEnvironment, out var isTest) || !isTest)
     {
-        logger.LogInformation("Base connection string 'Solar' not found in configuration.");
-        throw new InvalidOperationException("Connection string 'Solar' not found in configuration.");
+
+        if (string.IsNullOrEmpty(baseConnectionString))
+        {
+            logger.LogInformation("Base connection string 'Solar' not found in configuration.");
+            throw new InvalidOperationException("Connection string 'Solar' not found in configuration.");
+        }
+
+        if (string.IsNullOrEmpty(sqlPassword))
+        {
+            logger.LogInformation("Environment variable 'SQLSERVER_PASSWORD' not found in configuration.");
+            throw new InvalidOperationException("Environment variable 'SQLSERVER_PASSWORD' not set.");
+        }
+
+        if (string.IsNullOrEmpty(sqlServerHost))
+        {
+            logger.LogInformation("Connection string 'SW_DB_HOST' not found in configuration.");
+            throw new InvalidOperationException("Environment variable 'DB_HOST' not set.");
+        }
     }
 
-    if (string.IsNullOrEmpty(sqlPassword))
-    {
-        logger.LogInformation("Environment variable 'SQLSERVER_PASSWORD' not found in configuration.");
-        throw new InvalidOperationException("Environment variable 'SQLSERVER_PASSWORD' not set.");
-    }
-
-    if (string.IsNullOrEmpty(sqlServerHost))
-    {
-        logger.LogInformation("Connection string 'SW_DB_HOST' not found in configuration.");
-        throw new InvalidOperationException("Environment variable 'DB_HOST' not set.");
-    }
     logger.LogInformation("Base connection string 'Solar' is: {baseConnectionString}", baseConnectionString);
     logger.LogInformation("Environment variable 'SQLSERVER_PASSWORD' is: {sqlPassword}", sqlPassword);
     logger.LogInformation("Environment variable 'DB_HOST' is: {sqlServerHost}", sqlServerHost);
@@ -249,109 +260,115 @@ void AddIdentity()
 
 async void ApplyMigrations(ILogger<Program> logger)
 {
-    using var scope = app.Services.CreateScope();
+    var isTestEnvironment = Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT");
 
-    const int maxRetries = 6;
-    int retries = 0;
-    bool dbReady = false;
-    
-    while (!dbReady && retries < maxRetries)
+    if (string.IsNullOrEmpty(isTestEnvironment) || !bool.TryParse(isTestEnvironment, out var isTest) || !isTest)
     {
-        try
+        using var scope = app.Services.CreateScope();
+
+        const int maxRetries = 6;
+        int retries = 0;
+        bool dbReady = false;
+
+        while (!dbReady && retries < maxRetries)
         {
-            var solarContext = scope.ServiceProvider.GetRequiredService<SolarContext>();
-            
-            logger.LogInformation("Try to connect and migrate with connection string: {connectionString}", connectionString);
+            try
+            {
+                var solarContext = scope.ServiceProvider.GetRequiredService<SolarContext>();
 
-            var canConnect = await solarContext.Database.CanConnectAsync();
-            if (canConnect)
-            {
-                logger.LogInformation("Could connect to database.");
-            }
-            else
-            {
-                logger.LogInformation("Could not connect to database.");
-            }
+                logger.LogInformation("Try to connect and migrate with connection string: {connectionString}",
+                    connectionString);
 
-            var api = Environment.GetEnvironmentVariable("OPENWEATHERAPIKEY");
-            if (!string.IsNullOrEmpty(api))
-            {
-                logger.LogInformation("Api: {api}", api);
-            }
-            else
-            {
-                logger.LogInformation("Api not found.");
-            }
-            
-            var sign = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
-            if (!string.IsNullOrEmpty(sign))
-            {
-                logger.LogInformation("sign: {sign}", sign);
-            }
-            else
-            {
-                logger.LogInformation("sign not found.");
-            }
-            
-                        
-            var docker = Environment.GetEnvironmentVariable("DOCKER");
-            if (!string.IsNullOrEmpty(docker))
-            {
-                logger.LogInformation("docker: {docker}", docker);
-            }
-            else
-            {
-                logger.LogInformation("docker not found.");
-            }
-            
-            var audience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
-            if (!string.IsNullOrEmpty(audience))
-            {
-                logger.LogInformation("audience: {audience}", audience);
-            }
-            else
-            {
-                logger.LogInformation("audience not found.");
-            }
-            
-            var issuer = Environment.GetEnvironmentVariable("VALIDISSUER");
-            if (!string.IsNullOrEmpty(issuer))
-            {
-                logger.LogInformation("issuer: {issuer}", issuer);
-            }
-            else
-            {
-                logger.LogInformation("issuer not found.");
-            }
-            
-            var sqlPass = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
-            if (!string.IsNullOrEmpty(sqlPass))
-            {
-                logger.LogInformation("sqlPass: {sqlPass}", sqlPass);
-            }
-            else
-            {
-                logger.LogInformation("sqlPass not found.");
-            }
+                var canConnect = await solarContext.Database.CanConnectAsync();
+                if (canConnect)
+                {
+                    logger.LogInformation("Could connect to database.");
+                }
+                else
+                {
+                    logger.LogInformation("Could not connect to database.");
+                }
 
-            solarContext.Database.Migrate();
+                var api = Environment.GetEnvironmentVariable("OPENWEATHERAPIKEY");
+                if (!string.IsNullOrEmpty(api))
+                {
+                    logger.LogInformation("Api: {api}", api);
+                }
+                else
+                {
+                    logger.LogInformation("Api not found.");
+                }
 
-            dbReady = true;
-            logger.LogInformation("Migrations applied successfully.");
+                var sign = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
+                if (!string.IsNullOrEmpty(sign))
+                {
+                    logger.LogInformation("sign: {sign}", sign);
+                }
+                else
+                {
+                    logger.LogInformation("sign not found.");
+                }
+
+
+                var docker = Environment.GetEnvironmentVariable("DOCKER");
+                if (!string.IsNullOrEmpty(docker))
+                {
+                    logger.LogInformation("docker: {docker}", docker);
+                }
+                else
+                {
+                    logger.LogInformation("docker not found.");
+                }
+
+                var audience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
+                if (!string.IsNullOrEmpty(audience))
+                {
+                    logger.LogInformation("audience: {audience}", audience);
+                }
+                else
+                {
+                    logger.LogInformation("audience not found.");
+                }
+
+                var issuer = Environment.GetEnvironmentVariable("VALIDISSUER");
+                if (!string.IsNullOrEmpty(issuer))
+                {
+                    logger.LogInformation("issuer: {issuer}", issuer);
+                }
+                else
+                {
+                    logger.LogInformation("issuer not found.");
+                }
+
+                var sqlPass = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
+                if (!string.IsNullOrEmpty(sqlPass))
+                {
+                    logger.LogInformation("sqlPass: {sqlPass}", sqlPass);
+                }
+                else
+                {
+                    logger.LogInformation("sqlPass not found.");
+                }
+
+                solarContext.Database.Migrate();
+
+                dbReady = true;
+                logger.LogInformation("Migrations applied successfully.");
+            }
+            catch (Exception ex)
+            {
+                retries++;
+                logger.LogWarning(ex,
+                    "Database not ready. Waiting before retrying... Attempt {Attempt} of {MaxRetries}", retries,
+                    maxRetries);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retries))); // Exponential backoff
+            }
         }
-        catch (Exception ex)
+
+        if (!dbReady)
         {
-            retries++;
-            logger.LogWarning(ex,
-                "Database not ready. Waiting before retrying... Attempt {Attempt} of {MaxRetries}", retries,
-                maxRetries);
-            await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retries))); // Exponential backoff
+            logger.LogError("Failed to apply migrations after {MaxRetries} attempts.", maxRetries);
         }
-    }
-
-    if (!dbReady)
-    {
-        logger.LogError("Failed to apply migrations after {MaxRetries} attempts.", maxRetries);
     }
 }
 
@@ -360,3 +377,5 @@ bool IsRunningInDocker()
     var dockerEnv = Environment.GetEnvironmentVariable("DOCKER");
     return dockerEnv?.ToLower() == "true";
 }
+
+public partial class Program { }
