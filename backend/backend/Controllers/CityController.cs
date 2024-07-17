@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using backend.Models;
 using backend.Repositories.CityRepository;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,12 +36,14 @@ namespace backend.Controllers
         } 
         
         [HttpDelete("{id}/delete")]
-        public async Task<ActionResult<City>> DeleteCity(int id)
+        public async Task<IActionResult> DeleteCity(int id)
         {
             var city = await _cityRepository.GetCityById(id);
             
             await _cityRepository.DeleteCity(city);
             return NoContent();
         }
+
+
     }
 }
