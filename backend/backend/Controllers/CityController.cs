@@ -29,8 +29,17 @@ namespace backend.Controllers
         [HttpGet("{city}")]
         public async Task<ActionResult<City>> GetCity(string city)
         {
-            City c = await _cityRepository.GetCity(city);
+            City c = await _cityRepository.GetCityByName(city);
             return Ok(c);
         } 
+        
+        [HttpDelete("{id}/delete")]
+        public async Task<ActionResult<City>> DeleteCity(int id)
+        {
+            var city = await _cityRepository.GetCityById(id);
+            
+            await _cityRepository.DeleteCity(city);
+            return NoContent();
+        }
     }
 }
