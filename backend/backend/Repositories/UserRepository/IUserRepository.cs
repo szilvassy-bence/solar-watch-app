@@ -10,4 +10,5 @@ public interface IUserRepository
     Task DeleteById(string id);
     Task<IEnumerable<CityDto>> Favorites(string userName);
     Task AddFavorite(string userName, City city);
+    Task RemoveFavorite(string userName, City city);
 }

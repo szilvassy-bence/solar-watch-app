@@ -57,7 +57,17 @@ public class UserRepository : IUserRepository
     public async Task AddFavorite(string userName, City city)
     {
         AppUser user = await GetByName(userName);
+        if (user.Favorites.Contains(city)) throw new ArgumentException("City is already in favorites.");
+        
         user.Favorites.Add(city);
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task RemoveFavorite(string userName, City city)
+    {
+        AppUser user = await GetByName(userName);
+        if (!user.Favorites.Contains(city)) throw new ArgumentException("City is not in favorites.");
+        user.Favorites.Remove(city);
 
         await _context.SaveChangesAsync();
     }

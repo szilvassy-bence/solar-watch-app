@@ -76,7 +76,7 @@ public class UserController: ControllerBase
         return Ok(cities);
     }
 
-    [HttpPatch("{id}/favorites"), Authorize(Roles = "User")]
+    [HttpPatch("{id}/favorites/add"), Authorize(Roles = "User")]
     public async Task<IActionResult> AddFavorite(int id)
     {
         var userName = User.FindFirst(ClaimTypes.Name)?.Value;
@@ -87,6 +87,21 @@ public class UserController: ControllerBase
 
         City city = await _cityRepository.GetCityById(id);
         await _userRepository.AddFavorite(userName, city);
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id}/favorites/remove"), Authorize(Roles = "User")]
+    public async Task<IActionResult> RemoveFavorite(int id)
+    {
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+        if (string.IsNullOrEmpty(userName))
+        {
+            return Unauthorized();
+        }
+
+        City city = await _cityRepository.GetCityById(id);
+        await _userRepository.RemoveFavorite(userName, city);
 
         return NoContent();
     }
