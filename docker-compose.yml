@@ -15,8 +15,12 @@ services:
       - ISSUERSIGNINGKEY=${ISSUERSIGNINGKEY}
       - VALIDAUDIENCE=${VALIDAUDIENCE}
       - VALIDISSUER=${VALIDISSUER}
+    volumes:
+      - './backend/backend:/app/out'
     depends_on:
       - database
+    ports:
+      - "9000:80"
 
   frontend:
     image: solar-watch-app-frontend:v1.0
@@ -36,3 +40,8 @@ services:
       - SA_PASSWORD=${SQLSERVER_PASSWORD}
     ports:
       - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+volumes:
+  mssql_data:
