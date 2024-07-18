@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -12,13 +13,21 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
+import './Header.css';
+import { AuthContext } from '../../layout/root/Root';
+import UserMenuItem from './UserMenuItem';
 
-const pages = ['Products', 'Pricing', 'Blog'];
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+const pages = ['Cities'];
+const userMenu = ['Profile', 'Account', 'Dashboard', 'Logout'];
+const guestMenu = ['Log in, Register'];
 
 function Header() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
+
+  const { user, login, logout } = React.useContext(AuthContext);
+
+  const navigate = useNavigate();
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -41,10 +50,11 @@ function Header() {
         <Toolbar disableGutters>
           <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
           <Typography
+            className='logo-typo'
             variant="h6"
             noWrap
             component="a"
-            href="#app-bar-with-responsive-menu"
+            onClick={() => navigate('/')}
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
@@ -88,7 +98,10 @@ function Header() {
               }}
             >
               {pages.map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
+                <MenuItem key={page} onClick={() => {
+                  handleCloseNavMenu();
+                  navigate('/cities');
+                }}>
                   <Typography textAlign="center">{page}</Typography>
                 </MenuItem>
               ))}
@@ -99,7 +112,7 @@ function Header() {
             variant="h5"
             noWrap
             component="a"
-            href="#app-bar-with-responsive-menu"
+            onClick={() => navigate('/')}
             sx={{
               mr: 2,
               display: { xs: 'flex', md: 'none' },
@@ -117,7 +130,10 @@ function Header() {
             {pages.map((page) => (
               <Button
                 key={page}
-                onClick={handleCloseNavMenu}
+                onClick={() => {
+                  handleCloseNavMenu();
+                  navigate('/cities');
+                }}
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
                 {page}
@@ -147,11 +163,35 @@ function Header() {
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography textAlign="center">{setting}</Typography>
-                </MenuItem>
-              ))}
+              {user === null ? (
+                [
+                  <UserMenuItem 
+                    key="login" name="Log in" 
+                    handleCloseUserMenu={() => {
+                      handleCloseUserMenu();
+                      navigate('/login');
+                    }} 
+                  />,
+                  <UserMenuItem 
+                    key="register" name="Register" 
+                    handleCloseUserMenu={() => {
+                      handleCloseUserMenu();
+                      navigate('/register');
+                    }} 
+                  />
+                ] 
+                ) : (
+                  [
+                    <UserMenuItem key="profile" name="Profile" handleCloseUserMenu={() => {
+                      navigate('/profile');
+                      handleCloseUserMenu();}} />,
+                    <UserMenuItem key="logout" name="Log out" handleCloseUserMenu={() => {
+                      logout();
+                      navigate('/login');
+                      handleCloseUserMenu();}} />
+                  ]
+                )
+              }
             </Menu>
           </Box>
         </Toolbar>
