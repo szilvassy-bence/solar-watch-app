@@ -15,11 +15,9 @@ import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
 import './Header.css';
 import { AuthContext } from '../../layout/root/Root';
-import UserMenuItem from './UserMenuItem';
+import UserMenuItem from '../userMenuItem';
 
 const pages = ['Cities'];
-const userMenu = ['Profile', 'Account', 'Dashboard', 'Logout'];
-const guestMenu = ['Log in, Register'];
 
 function Header() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
