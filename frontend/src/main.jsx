@@ -6,7 +6,9 @@ import Root from './layout/root';
 import Error from './pages/error'
 import Home from './pages/home';
 import Cities from './pages/cities';
-
+import Login from './pages/login';
+import Register from './pages/Register';
+import Profile from './pages/profile';
 
 const router = createBrowserRouter([
   {
@@ -19,6 +21,18 @@ const router = createBrowserRouter([
         {
           path: '/cities',
           element: <Cities />
+        },
+        {
+          path: '/login',
+          element: <Login />
+        },
+        {
+          path: '/register',
+          element: <Register />
+        },
+        {
+          path: '/profile',
+          element: <Profile />
         }
 
     ]
