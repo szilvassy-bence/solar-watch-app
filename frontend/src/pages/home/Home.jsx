@@ -34,8 +34,8 @@ export default function Home() {
     return (
         <Container>
             <form noValidate autoComplete="off" onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                <Grid container spacing={2} direction='row' alignItems='center'>
+                    <Grid item xs={8}>
                         <TextInput 
                             label="city" 
                             defaultValue={cityName}
@@ -43,8 +43,9 @@ export default function Home() {
                             value={cityName}
                             onChange={(e) => setCityName(e.target.value)} />
                     </Grid>
-                    
-                    <SubmitButton text="Search" />
+                    <Grid item xs={4}>
+                        <SubmitButton text="Search" />
+                    </Grid>
                 </Grid>
             </form>
             { city && (
