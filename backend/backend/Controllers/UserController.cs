@@ -73,6 +73,8 @@ public class UserController: ControllerBase
         }
         
         IEnumerable<CityDto> cities = await _userRepository.Favorites(userName);
+        
+        _logger.LogInformation("Favorite cities of user has been sent.");
         return Ok(cities);
     }
 
@@ -87,6 +89,8 @@ public class UserController: ControllerBase
 
         City city = await _cityRepository.GetCityById(id);
         await _userRepository.AddFavorite(userName, city);
+        
+        _logger.LogInformation("City with id: '{id}' has been added to favorites.", id);
 
         return NoContent();
     }
@@ -102,6 +106,8 @@ public class UserController: ControllerBase
 
         City city = await _cityRepository.GetCityById(id);
         await _userRepository.RemoveFavorite(userName, city);
+        
+        _logger.LogInformation("City with id: '{id}' has been removed from favorites.", id);
 
         return NoContent();
     }
