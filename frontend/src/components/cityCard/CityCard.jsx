@@ -7,10 +7,12 @@ import Typography from '@mui/material/Typography';
 import { List } from '@mui/material';
 import { useContext } from "react";
 import { AuthContext, FavoriteContext } from '../../layout/root/Root';
+import { useNavigate } from 'react-router-dom';
 
 const CityCard = ({ city }) => {
   const {user} = useContext(AuthContext);
   const [favorites, setFavorites] = useContext(FavoriteContext);
+  const navigate = useNavigate();
 
   const handleDislike = async () => {
     try {
@@ -52,6 +54,11 @@ const CityCard = ({ city }) => {
     }
   }
 
+  function cityClick(e) {
+    let city = e.target.id;
+    navigate(`/cities/${city}`);
+  }
+
 
 	return (
 		<React.Fragment>
@@ -82,7 +89,7 @@ const CityCard = ({ city }) => {
           )}
         </CardContent>
         <CardActions>
-          <Button size="small">Learn More</Button>
+          <Button onClick={cityClick} id={city.name} size="small">Learn More</Button>
           { favorites && favorites.some(c => c.id === city.id) ? 
             <Button size="small" sx={{ backgroundColor: 'red', color: 'white' }} onClick={handleDislike}>Dislike</Button> :
             <Button size="small" sx={{ backgroundColor: 'green', color: 'white' }} onClick={handleLike}>Like</Button> 

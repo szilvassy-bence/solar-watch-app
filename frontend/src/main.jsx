@@ -9,6 +9,7 @@ import Cities from './pages/cities';
 import Login from './pages/login';
 import Register from './pages/Register';
 import Profile from './pages/profile';
+import City, { loader as cityLoader } from './pages/city';
 
 const router = createBrowserRouter([
   {
@@ -33,7 +34,14 @@ const router = createBrowserRouter([
         {
           path: '/profile',
           element: <Profile />
-        }
+        },
+        {
+          path: "/cities/:name",
+          element: <City/>,
+          loader: ({params}) => {
+              return cityLoader(params.name)
+          }
+      },
 
     ]
   }
