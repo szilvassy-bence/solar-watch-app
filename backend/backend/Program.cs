@@ -31,6 +31,11 @@ AddEnvironmentVariables(builder.Configuration, logger);
 AddServices();
 ConfigureSwagger();
 
+logger.LogInformation(builder.Configuration["Test:Secret"]);
+logger.LogInformation("SQL password from configuration SW_SQLSERVER_PASSWORD: {password}", builder.Configuration["SW_SQLSERVER_PASSWORD"]);
+logger.LogInformation("SQL password from configuration SQLSERVER_PASSWORD: {password}", builder.Configuration["SQLSERVER_PASSWORD"]);
+logger.LogInformation("Valid issuer from configuration: {valid-issuer}", builder.Configuration["SW_VALIDISSUER"]);
+
 var connectionString = BuildConnectionString(logger);
 AddDbContext(logger);
 
@@ -75,7 +80,7 @@ app.Run();
 
 void AddEnvironmentVariables(IConfigurationBuilder configBuilder, ILogger<Program> logger)
 {
-    var docker = Environment.GetEnvironmentVariable("DOCKER");
+    var docker = builder.Configuration["DOCKER"];
 
     if (!string.IsNullOrEmpty(docker))
     {
@@ -85,14 +90,16 @@ void AddEnvironmentVariables(IConfigurationBuilder configBuilder, ILogger<Progra
     {
         logger.LogInformation("Environment loads with add environment variables method.");
     }
-    if (!IsRunningInDocker())
+    if (string.IsNullOrEmpty(docker))
     {
         var parent = Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory()).FullName).FullName;
         var dotenv = Path.Combine(parent, ".env");
+        //var dotenv = "D:\\Code\\pet-projects\\solar-watch-app\\.env";
         logger.LogInformation("The path to .env file is: {path}", dotenv);
         DotEnv.Load(dotenv);
-
+        
         configBuilder.AddEnvironmentVariables().Build();
+        //configBuilder.AddEnvironmentVariables("SW_");
     }
 }
 
@@ -102,22 +109,14 @@ void AddServices()
         .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
     builder.Services.AddSingleton<IJsonProcessor, JsonProcessor>();
-    builder.Services.AddSingleton<ICityProvider, CityProvider>()
-        .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>()
-        .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddScoped<ICityRepository, CityRepository>()
-        .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>()
-        .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddScoped<IUserRepository, UserRepository>()
-        .AddProblemDetails()
-        .AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddSingleton<ICityProvider, CityProvider>();
+    builder.Services.AddSingleton<ISunriseSunsetProvider, SunriseSunsetProvider>();
+    builder.Services.AddScoped<ICityRepository, CityRepository>();
+    builder.Services.AddScoped<ISunriseSunsetRepository, SunriseSunsetRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<AuthenticationSeeder>();
@@ -175,9 +174,12 @@ void ConfigureSwagger()
 
 void AddAuthentication()
 {
-    var validIssuer = Environment.GetEnvironmentVariable("VALIDISSUER");
-    var validAudience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
-    var issuerSigningKey = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
+    //var validIssuer = Environment.GetEnvironmentVariable("VALIDISSUER");
+    var validIssuer = builder.Configuration["VALIDISSUER"];
+    //var validAudience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
+    var validAudience = builder.Configuration["VALIDAUDIENCE"];
+    //var issuerSigningKey = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
+    var issuerSigningKey = builder.Configuration["ISSUERSIGNINGKEY"];
     
     builder.Services
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -202,8 +204,10 @@ void AddAuthentication()
 string BuildConnectionString(ILogger<Program> logger)
 {
     var baseConnectionString = builder.Configuration.GetConnectionString("Solar");
-    var sqlPassword = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
-    var sqlServerHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost,1433";
+    //var sqlPassword = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
+    var sqlPassword = builder.Configuration["SQLSERVER_PASSWORD"];
+    //var sqlServerHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost,1433";
+    var sqlServerHost = builder.Configuration["DB_HOST"] ?? "localhost,1433";
     
     var isTestEnvironment = Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT");
 
@@ -289,67 +293,6 @@ async void ApplyMigrations(ILogger<Program> logger)
                     logger.LogInformation("Could not connect to database.");
                 }
 
-                var api = Environment.GetEnvironmentVariable("OPENWEATHERAPIKEY");
-                if (!string.IsNullOrEmpty(api))
-                {
-                    logger.LogInformation("Api: {api}", api);
-                }
-                else
-                {
-                    logger.LogInformation("Api not found.");
-                }
-
-                var sign = Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY");
-                if (!string.IsNullOrEmpty(sign))
-                {
-                    logger.LogInformation("sign: {sign}", sign);
-                }
-                else
-                {
-                    logger.LogInformation("sign not found.");
-                }
-
-
-                var docker = Environment.GetEnvironmentVariable("DOCKER");
-                if (!string.IsNullOrEmpty(docker))
-                {
-                    logger.LogInformation("docker: {docker}", docker);
-                }
-                else
-                {
-                    logger.LogInformation("docker not found.");
-                }
-
-                var audience = Environment.GetEnvironmentVariable("VALIDAUDIENCE");
-                if (!string.IsNullOrEmpty(audience))
-                {
-                    logger.LogInformation("audience: {audience}", audience);
-                }
-                else
-                {
-                    logger.LogInformation("audience not found.");
-                }
-
-                var issuer = Environment.GetEnvironmentVariable("VALIDISSUER");
-                if (!string.IsNullOrEmpty(issuer))
-                {
-                    logger.LogInformation("issuer: {issuer}", issuer);
-                }
-                else
-                {
-                    logger.LogInformation("issuer not found.");
-                }
-
-                var sqlPass = Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD");
-                if (!string.IsNullOrEmpty(sqlPass))
-                {
-                    logger.LogInformation("sqlPass: {sqlPass}", sqlPass);
-                }
-                else
-                {
-                    logger.LogInformation("sqlPass not found.");
-                }
-
                 solarContext.Database.Migrate();
 
                 dbReady = true;
@@ -370,12 +313,6 @@ async void ApplyMigrations(ILogger<Program> logger)
             logger.LogError("Failed to apply migrations after {MaxRetries} attempts.", maxRetries);
         }
     }
-}
-
-bool IsRunningInDocker()
-{
-    var dockerEnv = Environment.GetEnvironmentVariable("DOCKER");
-    return dockerEnv?.ToLower() == "true";
 }
 
 public partial class Program { }

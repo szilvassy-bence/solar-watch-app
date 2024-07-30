@@ -11,8 +11,7 @@ public class CityProvider : ICityProvider
     public CityProvider(ILogger<CityProvider> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _openWeatherApiKey = Environment.GetEnvironmentVariable("OPENWEATHERAPIKEY") 
-                             ?? throw new ArgumentException("Invalid OpenWeatherAPI key.");
+        _openWeatherApiKey = configuration["OPENWEATHERAPIKEY"] ?? throw new ArgumentException("Invalid OpenWeatherAPI key.");
     }
 
     public async Task<string> GetCity(string city)

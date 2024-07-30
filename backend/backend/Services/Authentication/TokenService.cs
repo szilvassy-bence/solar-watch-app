@@ -11,10 +11,12 @@ public class TokenService : ITokenService
 {
     private const int ExpirationMinutes = 180;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<TokenService> _logger;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(IConfiguration configuration, ILogger<TokenService> logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     public string CreateToken(IdentityUser user, string role)
@@ -32,8 +34,8 @@ public class TokenService : ITokenService
     private JwtSecurityToken CreateJwtToken(List<Claim> claims, SigningCredentials credentials,
         DateTime expiration) =>
         new(
-            Environment.GetEnvironmentVariable("VALIDISSUER"),
-            Environment.GetEnvironmentVariable("VALIDAUDIENCE"),
+            _configuration["VALIDISSUER"],
+            _configuration["VALIDAUDIENCE"],
             claims,
             expires: expiration,
             signingCredentials: credentials
@@ -73,7 +75,7 @@ public class TokenService : ITokenService
     {
         return new SigningCredentials(
             new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("ISSUERSIGNINGKEY"))
+                Encoding.UTF8.GetBytes(_configuration["ISSUERSIGNINGKEY"])
             ),
             SecurityAlgorithms.HmacSha256
         );
